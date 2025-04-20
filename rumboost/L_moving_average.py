@@ -11,6 +11,9 @@ The window radius adapts dynamically to local data density:
 - Narrow radii in data-dense regions to capture detail  
 - Broader radii in sparse regions to reduce noise
 
+Window sizes are specified as scales (fractions of the domain range) rather than 
+absolute values, allowing consistent behavior across variables with different units.
+
 References:
 - Oluleye et al. (2023). "Exploratory Data Analysis", EDA Techniques.
 """
@@ -23,10 +26,10 @@ import seaborn as sns
 from sklearn.isotonic import IsotonicRegression
 from rumboost.utility_smoothing import data_leaf_value
 
-def moving_average_smoother(x, y, window_radius=0.5, 
+def moving_average_smoother(x, y, window_radius_scale=0.05, 
                           use_adaptive_window=True,
-                          min_radius=0.1, 
-                          max_radius=2.0, 
+                          min_radius_scale=0.03, 
+                          max_radius_scale=0.2, 
                           scaling_factor=0.5,
                           use_endpoint_weighting=True,
                           endpoint_weight=0.05,
@@ -35,7 +38,8 @@ def moving_average_smoother(x, y, window_radius=0.5,
     """
     Apply moving average smoothing with distance-based windows.
     Instead of averaging a fixed number of points, averages points within a 
-    specified x-axis radius around each point.
+    specified x-axis radius around each point. Window sizes are specified as
+    fractions of the domain range rather than absolute values.
     
     Parameters
     ----------
@@ -43,15 +47,15 @@ def moving_average_smoother(x, y, window_radius=0.5,
         The x-values (all raw GBUV points).
     y : array-like
         The corresponding utility values.
-    window_radius : float, optional
-        Fixed radius (in x-units) for the averaging window.
+    window_radius_scale : float, optional
+        Fixed radius as fraction of domain range.
         Only used if use_adaptive_window=False.
     use_adaptive_window : bool, optional
         If True, use density-based adaptive window sizing.
-    min_radius : float, optional
-        Minimum window radius (R_min).
-    max_radius : float, optional
-        Maximum window radius (R_max).
+    min_radius_scale : float, optional
+        Minimum window radius as fraction of domain range.
+    max_radius_scale : float, optional
+        Maximum window radius as fraction of domain range.
     scaling_factor : float, optional
         Global scaling factor (c) for adaptive window computation.
     use_endpoint_weighting : bool, optional
@@ -75,6 +79,14 @@ def moving_average_smoother(x, y, window_radius=0.5,
     sort_idx = np.argsort(x)
     x_sorted = x[sort_idx]
     y_sorted = y[sort_idx]
+    
+    # Calculate domain range for converting scales to absolute values
+    x_range = np.max(x_sorted) - np.min(x_sorted)
+    
+    # Convert scale parameters to absolute values
+    window_radius = x_range * window_radius_scale
+    min_radius = x_range * min_radius_scale
+    max_radius = x_range * max_radius_scale
     
     # Apply endpoint replication if requested
     if use_endpoint_weighting:
@@ -139,10 +151,13 @@ def moving_average_smoother(x, y, window_radius=0.5,
     if debug:
         print(f"[DEBUG] Moving average smoother:")
         print(f"  Original data: n={len(x)}, x_range=({np.min(x):.4f}, {np.max(x):.4f})")
+        print(f"  Domain range: {x_range:.4f}")
+        print(f"  Window parameters:")
+        print(f"    - window_radius_scale: {window_radius_scale} -> {window_radius:.4f}")
+        print(f"    - min_radius_scale: {min_radius_scale} -> {min_radius:.4f}")
+        print(f"    - max_radius_scale: {max_radius_scale} -> {max_radius:.4f}")
         if use_adaptive_window:
             print(f"  Adaptive radii: min={np.min(adaptive_radii):.3f}, max={np.max(adaptive_radii):.3f}, mean={np.mean(adaptive_radii):.3f}")
-        else:
-            print(f"  Fixed window radius: {window_radius}")
         if use_endpoint_weighting:
             print(f"  Endpoint replication: {rep_count} points per endpoint")
         print(f"  Monotonicity enforced: {enforce_monotonicity}")
