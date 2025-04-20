@@ -1,0 +1,24 @@
+{
+  "0": {
+    "distance": 8,
+    "dur_walking": 12
+  },
+  "1": {
+    "distance": 10,
+    "dur_cycling": 9
+  },
+  "2": {
+    "cost_transit": 9,
+    "dur_pt_access": 10,
+    "dur_pt_bus": 4,
+    "dur_pt_int_waiting": 5,
+    "dur_pt_int_walking": 11,
+    "dur_pt_rail": 3
+  },
+  "3": {
+    "cost_driving_fuel": 7,
+    "distance": 4,
+    "driving_traffic_percent": 7,
+    "dur_driving": 7
+  }
+}
